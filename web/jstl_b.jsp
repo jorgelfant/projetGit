@@ -846,7 +846,148 @@ Vous pouvez ici observer :
       *l'ajout automatique de l'identifiant de session. Remarquez d'ailleurs ici sa présence avant les paramètres de
        la requête, et non après.
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                  Redirection
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+La balise <c:redirect> est utilisée pour envoyer un message de redirection HTTP au navigateur de l'utilisateur.
+Si elle ressemble à l'action <jsp:forward>, il existe toutefois une grosse différence, qui réside dans le fait
+qu'elle va entraîner un changement de l'URL dans le navigateur de l'utilisateur final, contrairement à <jsp:forward>
+qui est transparente du point de vue de l'utilisateur (l'URL dans la barre de navigation du navigateur n'est pas modifiée).
+
+La raison de cette différence de comportement est simple : le forwarding se fait côté serveur, contrairement à la
+redirection qui est effectuée par le navigateur. Cela limite par conséquent la portée de l'action de forwarding qui,
+puisque exécutée côté serveur, est limitée aux pages présentes dans le contexte de la servlet utilisée. La redirection
+étant exécutée côté client, rien ne vous empêche de rediriger l'utilisateur vers n'importe quelle page web.
+
+Au final, le forwarding est plus performant, ne nécessitant pas d'aller-retour passant par le navigateur de l'utilisateur
+final, mais il est moins flexible que la redirection. De plus, utiliser le forwarding impose certaines contraintes :
+concrètement, l'utilisateur final n'est pas au courant que sa requête a été redirigée vers une ou plusieurs servlets
+ou JSP différentes, puisque l'URL qui est affichée dans son navigateur ne change pas. En d'autres termes, cela veut
+dire que l'utilisateur ne sait pas si le contenu qu'il visualise dans son navigateur a été produit par la page qu'il
+a appelée via l'URL d'origine, ou par une autre page vers laquelle la première servlet ou JSP appelée a effectué un
+forwarding ! Ceci peut donc poser problème si l'utilisateur rafraîchit la page par exemple, puisque cela appellera à
+nouveau la servlet ou JSP d'origine... Sachez enfin que lorsque vous utilisez le forwarding, le code présent après
+cette instruction dans la page n'est pas exécuté.
+
+Bref, je vous conseille, pour débuter, d'utiliser la redirection via la balise <c:redirect> plutôt que l'action
+standard JSP, cela vous évitera bien des ennuis. Voyons pour terminer quelques exemples d'utilisation :
+
+                                -- Forwarding avec l'action standard JSP --
+                             <jsp:forward page="/monSiteWeb/erreur.jsp">
+
+                                   -- Redirection avec la balise redirect --
+                                 <c:redirect url="http://www.siteduzero.com"/>
+
+
+                                 -- Les attributs valables pour <c:url/> le sont aussi pour la redirection.
+                                 Ici par exemple, l'utilisation de paramètres --
+
+                                 <c:redirect url="http://www.siteduzero.com">
+                                     <c:param name="mascotte" value="zozor"/>
+                                     <c:param name="langue" value="fr"/>
+                                 </c:redirect>
+
+                                 -- Redirigera vers --
+                                 http://www.siteduzero.com?mascotte=zozor&langue=fr
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                             Imports
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+La balise <c:import> est en quelque sorte un équivalent à <jsp:include>, mais qui propose plus d'options, et pallie
+ainsi les manques de l'inclusion standard.
+
+L'attribut url est le seul paramètre obligatoire lors de l'utilisation de cette balise, et il désigne logiquement le
+fichier à importer :
+
+                           -- Copie le contenu du fichier ciblé dans la page actuelle --
+                                         <c:import url="exemple.html"/>
+
+Un des avantages majeurs de la fonction d'import est qu'elle permet d'utiliser une variable pour stocker le flux
+récupéré, et ne propose pas simplement de l'inclure dans votre JSP comme c'est le cas avec <jsp:include>. Cette
+fonctionnalité est importante, puisqu'elle permet d'effectuer des traitements sur les pages importées. L'attribut
+utilisé pour ce faire est nommé varReader. Nous reverrons cela en détail lorsque nous découvrirons la bibliothèque
+xml de la JSTL, où ce système prend toute son importance lorsqu'il s'agit de lire et de parser des fichiers XML :
+
+                             -- Copie le contenu d'un fichier xml dans une variable (fileReader),
+                           puis parse le flux récupéré dans une autre variable (doc). --
+                           <c:import url="test.xml" varReader="fileReader">
+                               <x:parse var="doc" doc="${fileReader}" />
+                           </c:import>
+
+Ne vous inquiétez pas si la ligne <x:parse var="doc" doc="${fileReader}" /> vous est inconnue, c'est une balise de
+la bibliothèque xml de la JSTL que je vous présenterai dans le chapitre suivant. Vous pouvez cependant retenir
+l'utilisation du <c:import> pour récupérer un flux xml.
+
+Note : le contenu du varReader utilisé, autrement dit la variable dans laquelle est stocké le contenu de votre fichier,
+n'est accessible qu'à l'intérieur du corps de la balise d'import, entre les tags <c:import> et </c:import>. Il n'est
+par conséquent pas possible de s'en servir en dehors. Dans le chapitre portant sur la bibliothèque xml, nous découvrirons
+un autre moyen, permettant de pouvoir travailler sur le contenu du fichier en dehors de l'import, au travers d'une
+variable de scope.
+
+De la même manière que la redirection par rapport au forwarding, <c:import> permet d'inclure des pages extérieures au
+contexte de votre servlet ou à votre serveur, contrairement à l'action standard JSP. Voyons une nouvelle fois quelques
+exemples d'utilisation :
+
+                          -- Inclusion d'une page avec l'action standard JSP. --
+                        <jsp:include page="index.html" />
+
+                          -- Importer une page distante dans une variable
+                        Le scope par défaut est ici page si non précisé. --
+                        <c:import url="http://www.siteduzero.com/zozor/biographie.html" var="bio" scope="page"/>
+
+                          - Les attributs valables pour <c:url/> le sont aussi pour la redirection.
+                        Ici par exemple, l'utilisation de paramètres --
+                        <c:import url="footer.jsp">
+                            <c:param name="design" value="bleu"/>
+                        </c:import>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                  Les autres bibliothèques de la JSTL
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Au terme de ce chapitre, vous devez être capables de transformer des scriptlets Java contenant variables, boucles et
+conditions en une jolie page JSP basée sur des tags JSTL.
+Testez maintenant vos connaissances dans le TP qui suit ce chapitre !
+
+Sachez avant de continuer, que d'autres bibliothèques de base existent, la JSTL ne contenant en réalité pas une
+bibliothèque mais cinq ! Voici une brève description des quatre autres :
+
+* fmt : destinée au formatage et au parsage des données. Permet notamment la localisation de l'affichage ;
+
+* fn : destinée au traitement de chaînes de caractères ;
+
+* sql : destinée à l'interaction avec une base de données. Celle-ci ne trouve pour moi son sens que dans une petite
+  application standalone, ou une feuille de tests. En effet, le code ayant trait au stockage des données dans une
+  application web Java EE suivant le modèle MVC doit être masqué de la vue, et être encapsulé dans le modèle,
+  éventuellement dans une couche dédiée (voir le modèle de conception DAO pour plus d'information à ce sujet).
+  Bref, je vous laisse parcourir par vous-mêmes les liens de documentation si vous souhaitez en faire usage dans
+  vos projets. En ce qui nous concerne, nous suivons MVC à la lettre et je ne souhaite clairement pas vous voir
+  toucher aux données de la base directement depuis vos pages JSP... Une fois n'est pas coutume, le premier que je
+  vois coder ainsi, je le pends à un arbre ! :D
+
+* xml : destinée au traitement de fichiers et données XML. À l'instar de la bibliothèque sql, celle-ci trouve
+ difficilement sa place dans une application MVC, ces traitements ayant bien souvent leur place dans des objets du
+ modèle, et pas dans la vue. Cela dit, dans certains cas elle peut s'avérer très utile, ce format étant très répandu
+ dans les applications et communications web : c'est pour cela que j'ai décidé d'en faire l'objet du prochain chapitre !
+
+
+                           On affiche le contenu d'une variable ou d'un objet avec <c:out>.
+
+                           On effectue un test avec <c:if> ou <c:choose>.
+
+                           On réalise une boucle sur une collection avec <c:forEach>.
+
+                           On génère un lien de manière automatique avec <c:url>.
+
+                           On redirige vers une autre page avec <c:redirect>.
+
+                           On importe une autre page avec <c:import>.
+
 --%>
+
+
 
 
 
