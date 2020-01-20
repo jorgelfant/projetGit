@@ -710,6 +710,145 @@ Voici les trois fonctionnalités associées à la balise :
        * réécrire l'adresse pour la gestion des sessions (si les cookies sont désactivés ou absents, par exemple) ;
 
        * encoder les noms et contenus des paramètres de l'URL.
+
+L'attribut value contient logiquement l'adresse, et l'attribut var permet comme pour les tags vus auparavant
+de stocker le résultat dans une variable. Voici un premier jeu d'exemples :
+
+Génère une url simple, positionnée dans un lien HTML
+
+       <a href="<c:url value="test.jsp" />">lien</a>
+
+Génère une url et la stocke dans la variable lien
+
+        <c:url value="test.jsp" var="lien" />
+
+1. Ajout du contexte
+********************
+
+Lorsqu'une URL est absolue, c'est-à-dire lorsqu'elle fait référence à la racine de l'application et commence par
+le caractère / , le contexte de l'application sera par défaut ajouté en début d'adresse. Ceci est principalement dû
+au fait que lors du développement d'une application, le nom du contexte importe peu et on y écrit souvent un nom par
+défaut, faute de mieux. Il n'est généralement choisi définitivement que lors du déploiement de l'application, qui
+intervient en fin de cycle.
+
+Lors de l'utilisation d'adresses relatives, pas de soucis puisqu'elles ne font pas référence au contexte, et pointeront,
+quoi qu'il arrive, vers le répertoire courant. Mais pour les adresses absolues, pointant à la racine, sans cette
+fonctionnalité il serait nécessaire d'écrire en dur le contexte de l'application dans les URL lors du développement,
+et de toutes les modifier si le contexte est changé par la suite lors du déploiement. Vous comprenez donc mieux
+l'intérêt d'un tel système.
+
+
+                                -- L'url absolue ainsi générée --
+                                <c:url value="/test.jsp" />
+
+                                -- Sera rendue ainsi dans la page web finale si le contextPath est "Test" --
+                                /Test/test.jsp
+
+                                -- Et une url relative ainsi générée --
+                                <c:url value="test.jsp" />
+
+                                -- Ne sera pas modifiée lors du rendu --
+                                test.jsp
+
+2. Gestion des sessions
+***********************
+
+Si le conteneur JSP détecte un cookie stockant l'identifiant de session dans le navigateur de l'utilisateur, alors
+aucune modification ne sera apportée à l'URL. Par contre, si ce cookie est absent, les URL générées via la balise
+<c:url> seront réécrites pour intégrer l'identifiant de session en question. Regardez ces exemples, afin de bien
+visualiser la forme de ce paramètre :
+
+                                      -- L'url ainsi générée --
+                                      <c:url value="test.jsp" />
+
+                                      -- Sera rendue ainsi dans la page web finale,
+                                      si le cookie est présent --
+                                      test.jsp
+
+                                      -- Et sera rendue sous cette forme si le cookie est absent --
+                                      test.jsp;jsessionid=A6B57CE08012FB431D
+
+3. Encodage
+**********
+
+En utilisant la balise <c:url>, les paramètres que vous souhaitez passer à cette URL seront encodés : les caractères
+spéciaux qu'ils contiennent éventuellement vont être transformés en leurs codes HTML respectifs. Toutefois, il ne faut
+pas faire de confusion ici : ce sont seulement les paramètres (leur nom et contenu) qui seront encodés, le reste de
+l'URL ne sera pas modifié. La raison de ce comportement est de pouvoir assurer la compatibilité avec l'action standard
+d'inclusion <jsp:include>, qui ne sait pas gérer une URL encodée.
+
+D'accord, mais comment faire pour passer des paramètres ?
+
+Pour transmettre proprement des paramètres à une URL, une balise particulière existe : <c:param>. Elle ne peut exister
+que dans le corps des balises <c:url>, <c:import> ou <c:redirect>. Elle se présente sous cette
+
+                          <c:url value="/monSiteWeb/countZeros.jsp">
+                            <c:param name="nbZeros" value="${countZerosBean.nbZeros}"/>
+                            <c:param name="date" value="22/06/2010"/>
+                          </c:url>
+
+L'attribut name contient donc le nom du paramètre, et value son contenu. C'est en réalité cette balise, ici fille de
+la balise <c:url>, qui se charge de l'encodage des paramètres, et non directement la balise <c:url>. Retenez enfin
+qu'une telle balise ne peut exister qu'entre deux balises d'URL, de redirection ou d'import, et qu'il est possible
+d'en utiliser autant que nécessaire.
+
+           -- Une URL générée de cette manière --
+           <a href="<c:url value="/monSiteWeb/test.jsp">
+             <c:param name="date" value="22/06/2010"/>
+             <c:param name="donnees" value="des données contenant des c@r#ct%res bi&a**es..."/>
+           </c:url>">Lien HTML</a>
+
+           -- Sera rendue ainsi dans la page web finale --
+           <a href="/test/monSiteWeb/test.jsp?date=22%2f06%2f2010&donnees=des+donn%e9es+contenant+des+c%40r%23ct%25res+bi%26a**es...">Lien HTML</a>
+
+Vous voyez bien dans cet exemple que :
+
+  * les caractères spéciaux contenus dans les paramètres de l'URL ont été transformés : / est devenu %2f, é est devenu %e9, etc ;
+
+  * les caractères & séparant les différents paramètres, qui font quant à eux partie intégrante de l'URL, n'ont pas été
+    modifiés en leur code HTML &amp; .
+
+Si vous travaillez sur une page XML ou une page XHTML stricte, alors vous devez savoir qu'afin de respecter les normes
+qui régissent ces technologies, il est impératif d'encoder proprement l'URL. Cela dit, je viens de vous expliquer que
+la balise <c:url> n'effectue pas cette opération, elle ne s'occupe que des paramètres... Par conséquent, vous devrez
+transformer vous-mêmes les caractères spéciaux, comme le & séparant les paramètres d'une URL, en leur code HTML
+équivalent (en l'occurrence, & doit devenir &amp; pour que la syntaxe soit valide). Si vous avez bien suivi, vous
+savez qu'il est possible d'effectuer ces transformations à l'aide de la balise <c:out> !
+
+Pour résumer
+***********
+
+Récapitulons tout cela avec un exemple assez complet :
+
+                    -- L'url avec paramètres ainsi générée --
+                    <c:url value="/monSiteWeb/countZeros.jsp">
+                        <c:param name="nbZeros" value="123"/>
+                        <c:param name="date" value="22/06/2010"/>
+                    </c:url>
+
+                    -- Sera rendue ainsi dans la page web finale,
+                    si le cookie est présent et le contexte est Test --
+                    /Test/monSiteWeb/countZeros.jsp?nbZeros=123&date=22%2f06%2f2010
+
+                    -- Et sera rendue sous cette forme si le cookie est absent --
+                    /Test/monSiteWeb/countZeros.jsp;jsessionid=A6B57CE08012FB431D?nbZeros=123&date=22%2f06%2f2010
+
+Vous pouvez ici observer :
+
+      *la mise en place de paramètres via <c:param> ;
+
+      *l'ajout automatique du contexte en début de l'URL absolue ;
+
+      *l'encodage automatique des paramètres (ici les caractères / dans la date sont transformés en %2f) ;
+
+      *le non-encodage de l'URL (le caractère & séparant les paramètres n'est pas transformé) ;
+
+      *l'ajout automatique de l'identifiant de session. Remarquez d'ailleurs ici sa présence avant les paramètres de
+       la requête, et non après.
+
 --%>
+
+
+
 </body>
 </html>
