@@ -684,7 +684,32 @@ situations se résout au cas par cas, selon vos besoins. Mais n'oubliez pas : vo
 uniquement. Si vous sentez que vous avez besoin de fonctionnalités qui n'existent pas dans la JSTL, il y a de grandes
 chances pour que vous soyez en train de trop en demander à votre vue, et éventuellement de bafouer MVC !
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                   LES LIENS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Liens
+*****
+
+La balise <c:url> a pour objectif de générer des URL. En lisant ceci, j'imagine que vous vous demandez ce qu'il peut
+bien y avoir de particulier à gérer dans la création d'une URL ! Dans une page HTML simple, lorsque l'on crée un lien
+on se contente en effet d'écrire directement l'adresse au sein de la balise <a> :
+
 --%>
 
+<a href="url">lien</a>
+
+<%--
+Dans ce cas, qu'est-ce qui peut motiver le développeur à utiliser la balise <c:url> ?
+
+Eh bien vous devez savoir qu'en réalité, une adresse n'est pas qu'une simple chaîne de caractères, elle est soumise à plusieurs contraintes.
+Voici les trois fonctionnalités associées à la balise :
+
+       * ajouter le nom du contexte aux URL absolues ;
+
+       * réécrire l'adresse pour la gestion des sessions (si les cookies sont désactivés ou absents, par exemple) ;
+
+       * encoder les noms et contenus des paramètres de l'URL.
+--%>
 </body>
 </html>
