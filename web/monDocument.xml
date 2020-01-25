@@ -1,0 +1,17 @@
+<news>
+    <article id="1">
+        <auteur>Pierre</auteur>
+        <titre>Foo...</titre>
+        <contenu>...bar !</contenu>
+    </article>
+    <article id="27">
+        <auteur>Paul</auteur>
+        <titre>Bientôt un LdZ J2EE !</titre>
+        <contenu>Woot ?</contenu>
+    </article>
+    <article id="102">
+        <auteur>Jacques</auteur>
+        <titre>Coyote court toujours</titre>
+        <contenu>Bip bip !</contenu>
+    </article>
+</news>
