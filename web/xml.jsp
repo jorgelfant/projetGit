@@ -154,7 +154,7 @@ Nous allons, pour cela, faire intervenir une nouvelle balise, issue de la librai
 
 <c:import url="monDocument.xml" varReader="monReader">
     <%-- Parse le contenu du fichier XML monDocument.xml dans une variable nommée 'doc' --%>
-    <x:parse var="doc" doc="${monReader}" ></x:parse>
+    <x:parse var="doc" doc="${monReader}"></x:parse>
 </c:import>
 
 <%--
@@ -171,10 +171,186 @@ Dans certains codes vieillissants, vous trouverez parfois dans l'utilisation de 
 Sachez qu'il joue le même rôle que l'attribut doc, et qu'il est déprécié : concrètement, il a été remplacé par doc, et
 il ne faut donc plus l'utiliser.
 
+Note : l'import qui stocke le fichier dans le varReader doit rester ouvert pour pouvoir appliquer un <x:parse> sur le
+contenu de ce varReader ! La portée du varReader défini est en effet uniquement l'intérieur du corps du <c:import>.
+Afin de pouvoir accéder à ce varReader, il ne faut donc pas fermer directement la balise d'import comme c'est le cas
+ci-dessous :
 
+
+                             -- Mauvaise utilisation du varReader --
+                  <c:import url="monDocument.xml" varReader="monReader" ></c:import>
+
+Toutefois, il est possible de ne pas utiliser le varReader, et de simplement utiliser une variable de scope.
+Vous pourrez ainsi faire votre import, puis traiter le contenu du fichier par la suite, sans devoir travailler dans
+le corps de la balise d'import :
+
+                       <c:import url="monDocument.xml" var="monReader" ></code>
+
+Cela dit, je vous conseille de travailler avec le varReader, puisque c'est l'objectif premier de cet attribut.
+
+Plusieurs remarques sont d'ores et déjà nécessaires.
+***************************************************
+
+Comprenez bien ici la différence entre le varReader de la balise <c:import> et le var de la balise <x:parse>:
+le premier contient le contenu brut du fichier XML, alors que le second contient le résultat du parsing du fichier XML.
+Pour faire simple, la JSTL utilise une structure de données qui représente notre document XML parsé, et c'est cette
+structure qui est stockée dans la variable définie par var.
+
+Le type de la variable définie via cet attribut var dépendra de l'implémentation choisie par le développeur. Pour
+information, il est possible de remplacer l'attribut var par l'attribut nommé varDom, qui permet de fixer l'implémentation
+utilisée : la variable ainsi définie sera de type org.w3c.dom.Document. De même, scope sera remplacé par scopeDom.
+Ceci impose donc que votre fichier XML respecte l'interface Document citée précédemment. Tout cela étant vraiment
+spécifique, je ne m'étalerai pas davantage sur le sujet et je vous renvoie à la documentation pour plus d'infos.
+
+Importer un fichier n'est pas nécessaire. Il est en effet possible de traiter directement un flux XML depuis la page JSP,
+en le plaçant dans le corps de la balise <x:parse> :
+
+-- Parse le flux XML contenu dans le corps de la balise --
+
+--%>
+<x:parse var="doc" >
+    <news>
+        <article id="1">
+            <auteur>Pierre</auteur>
+            <titre>Foo...</titre>
+            <contenu>...bar !</contenu>
+        </article>
+        <article id="27">
+            <auteur>Paul</auteur>
+            <titre>Bientôt un LdZ J2EE !</titre>
+            <contenu>Woot ?</contenu>
+        </article>
+        <article id="102">
+            <auteur>Jacques</auteur>
+            <titre>Coyote court toujours</titre>
+            <contenu>Bip bip !</contenu>
+        </article>
+    </news>
+</x:parse>
+
+<%--
+Il reste seulement deux attributs que je n'ai pas encore abordés :
+
+filter : permet de limiter le contenu traité par l'action de parsing <x:parse> à une portion d'un flux XML seulement.
+         Cet attribut peut s'avérer utile lors de l'analyse de documents XML lourds, afin de ne pas détériorer les performances
+         à l'exécution de votre page. Pour plus d'information sur ces filtres de type XMLFilter, essayez la documentation.
+
+systemId : cet attribut ne vous sera utile que si votre fichier XML contient des références vers des entités externes.
+           Vous devez y saisir l'adresse URI qui permettra de résoudre les liens relatifs contenus dans votre fichier XML.
+           Bref rappel : une référence à une entité externe dans un fichier XML est utilisée pour y inclure un fichier
+           externe, principalement lorsque des données ou textes sont trop longs et qu'il est plus simple de les garder
+           dans un fichier à part. Le processus accédera à ces fichiers externes lors du parsage du document XML spécifié.
+
+Je n'ai, pour ces derniers, pas d'exemple trivial à vous proposer. Je fais donc volontairement l'impasse ici ; je pense
+que ceux parmi vous qui connaissent et ont déjà manipulé les filtres XML et les entités externes comprendront aisément
+de quoi il s'agit.
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                               Afficher une expression
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Les noms des balises que nous allons maintenant aborder devraient vous être familiers : ils trouvent leurs équivalents
+dans la bibliothèque Core que vous avez découverte dans le chapitre précédent. Alors que les balises de type Core
+accédaient à des données de l'application en utilisant des EL, les balises de la bibliothèque xml vont accéder à des
+données issues de documents XML, via des expressions XPath.
+
+Pour afficher un élément, nous allons utiliser la balise <x:out>, pour laquelle seul l'attribut select est nécessaire :
+
+--%>
+<c:import url="monDocument.xml" varReader="monReader">
+    <%-- Parse le contenu du fichier XML monDocument.xml dans une variable nommée 'doc' --%>
+    <x:parse var="doc" doc="${monReader}" ></x:parse>
+    <x:out select="$doc/news/article/auteur" ></x:out>
+</c:import>
+
+<%--
+Le rendu HTML du code ci-dessus est alors le suivant :
+
+Pierre
+
+
+En suivant le paragraphe introduisant XPath, j'avais compris qu'une telle expression renvoyait tous les nœuds "auteur"
+du document !
+Où sont passés Paul et Jacques ? Où est l'erreur ?
+
+Hé hé... Eh bien, à vrai dire il n'y a aucune erreur ! En effet, l'expression XPath renvoie bel et bien un ensemble
+de nœuds, en l'occurrence les nœuds "auteur" ; cet ensemble de nœuds est stocké dans une structure de type NodeSet,
+un type propre à XPath qui implémente le type Java standard NodeList.
+
+Le comportement ici observé provient du fait que la balise d'affichage <x:out> ne gère pas réellement un ensemble de
+nœuds, et n'affiche que le premier nœud contenu dans cet ensemble de type NodeSet. Toutefois, le contenu de l'attribut
+select peut très bien contenir un NodeSet ou une opération sur un NodeSet. Vérifions par exemple que NodeSet contient
+bien 3 nœuds, puisque nous avons 3 auteurs dans notre document XML :
 
 --%>
 
+<c:import url="monDocument.xml" varReader="monReader">
+    <%-- Parse le contenu du fichier XML monDocument.xml dans une variable nommée 'doc' --%>
+    <x:parse var="doc" doc="${monReader}" ></x:parse>
+    <x:out select="count($doc/news/article/auteur)" ></x:out>
+</c:import>
+
+<%--
+J'utilise ici la fonction count(), qui renvoie le nombre d'éléments que l'expression XPath a sélectionnés et stockés
+dans le NodeSet. Et le rendu HTML de cet exemple est bien "3" ; notre ensemble de nœuds contient donc bien trois auteurs,
+Paul et Jacques ne sont pas perdus en cours de route. :)
+
+L'attribut select de la balise <x:out> est l'équivalent de l'attribut value de la balise <c:out>, sauf qu'il attend ici
+une expression XPath et non plus une EL ! Rappelez-vous que le rôle des expressions XPath est de sélectionner des portions
+de document XML. Expliquons rapidement l'expression <x:out select="$doc/news/article/auteur" /> : elle va sélectionner
+tous les nœuds "auteur" qui sont enfants d'un nœud "article" lui-même enfant du nœud racine "news" présent dans le
+document $doc. En l'occurrence, $doc se réfère ici au contenu parsé de notre variable varReader.
+
+Dans une expression XPath, pour faire référence à une variable nommée nomVar on n'utilise pas ${nomVar} comme c'est le
+cas dans une EL, mais $nomVar. Essayez de retenir cette syntaxe, cela vous évitera bien des erreurs ou des comportements
+inattendus !
+
+À ce sujet, sachez enfin qu'outre une variable simple, il est possible de faire intervenir les objets implicites dans
+une expression XPath, de cette manière :
+--%>
+
+<%-- Récupère le document nommé 'doc' enregistré auparavant en session, via l'objet implicite sessionScope  --%>
+<x:out select="$sessionScope:doc/news/article" ></x:out>
+
+<%-- Sélectionne le nœud 'article' dont l'attribut 'id' a pour valeur le contenu de la variable
+ nommée 'idArticle' qui a été passée en paramètre de la requête, via l'objet implicite param  --%>
+<x:out select="$doc/news/article[@id=$param:idArticle]"></x:out>
+
+<%--
+Ce qu'on peut retenir de cette balise d'affichage, c'est qu'elle fournit, grâce à un fonctionnement basé sur des
+expressions XPath, une alternative aux feuilles de style XSL pour la transformation de contenus XML, en particulier
+lorsque le format d'affichage final est une page web HTML.
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                Créer une variable
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Nous passerons très rapidement sur cette balise. Sa syntaxe est <x:set>, et comme vous vous en doutez elle est
+l'équivalent de la balise <c:set> de la bibliothèque Core, avec de petites différences :
+
+l'attribut select remplace l'attribut value, ce qui a la même conséquence que pour la balise d'affichage :
+une expression XPath est attendue, et non pas une EL ;
+
+l'attribut var est obligatoire, ce qui n'était pas le cas pour la balise <c:set>.
+
+Ci-dessous un bref exemple de son utilisation :
+
+--%>
+
+<%-- Enregistre le résultat de l'expression XPath, spécifiée dans l'attribut select,
+dans une variable de session nommée 'auteur' --%>
+<x:set var="auteur" scope="session" select="$doc//auteur" ></x:set>
+
+<%-- Affiche le contenu de la variable nommée 'auteur' enregistrée en session --%>
+<x:out select="$sessionScope:auteur" ></x:out>
+
+<%--
+Le rôle de cette balise est donc sensiblement le même que son homologue de la bibliothèque Core : enregistrer
+le résultat d'une expression dans une variable de scope. La seule différence réside dans la nature de l'expression
+évaluée, qui est ici une expression XPath et non plus une EL.
+
+
+--%>
 
 </body>
 </html>
