@@ -208,7 +208,7 @@ en le plaçant dans le corps de la balise <x:parse> :
 -- Parse le flux XML contenu dans le corps de la balise --
 
 --%>
-<x:parse var="doc" >
+<x:parse var="doc">
     <news>
         <article id="1">
             <auteur>Pierre</auteur>
@@ -259,8 +259,8 @@ Pour afficher un élément, nous allons utiliser la balise <x:out>, pour laquell
 --%>
 <c:import url="monDocument.xml" varReader="monReader">
     <%-- Parse le contenu du fichier XML monDocument.xml dans une variable nommée 'doc' --%>
-    <x:parse var="doc" doc="${monReader}" ></x:parse>
-    <x:out select="$doc/news/article/auteur" ></x:out>
+    <x:parse var="doc" doc="${monReader}"></x:parse>
+    <x:out select="$doc/news/article/auteur"></x:out>
 </c:import>
 
 <%--
@@ -286,8 +286,8 @@ bien 3 nœuds, puisque nous avons 3 auteurs dans notre document XML :
 
 <c:import url="monDocument.xml" varReader="monReader">
     <%-- Parse le contenu du fichier XML monDocument.xml dans une variable nommée 'doc' --%>
-    <x:parse var="doc" doc="${monReader}" ></x:parse>
-    <x:out select="count($doc/news/article/auteur)" ></x:out>
+    <x:parse var="doc" doc="${monReader}"></x:parse>
+    <x:out select="count($doc/news/article/auteur)"></x:out>
 </c:import>
 
 <%--
@@ -310,7 +310,7 @@ une expression XPath, de cette manière :
 --%>
 
 <%-- Récupère le document nommé 'doc' enregistré auparavant en session, via l'objet implicite sessionScope  --%>
-<x:out select="$sessionScope:doc/news/article" ></x:out>
+<x:out select="$sessionScope:doc/news/article"></x:out>
 
 <%-- Sélectionne le nœud 'article' dont l'attribut 'id' a pour valeur le contenu de la variable
  nommée 'idArticle' qui a été passée en paramètre de la requête, via l'objet implicite param  --%>
@@ -338,19 +338,291 @@ Ci-dessous un bref exemple de son utilisation :
 --%>
 
 <%-- Enregistre le résultat de l'expression XPath, spécifiée dans l'attribut select,
-dans une variable de session nommée 'auteur' --%>
-<x:set var="auteur" scope="session" select="$doc//auteur" ></x:set>
+     dans une variable de session nommée 'auteur' --%>
+<x:set var="auteur" scope="session" select="$doc//auteur"></x:set>
 
 <%-- Affiche le contenu de la variable nommée 'auteur' enregistrée en session --%>
-<x:out select="$sessionScope:auteur" ></x:out>
+<x:out select="$sessionScope:auteur"></x:out>
 
 <%--
 Le rôle de cette balise est donc sensiblement le même que son homologue de la bibliothèque Core : enregistrer
 le résultat d'une expression dans une variable de scope. La seule différence réside dans la nature de l'expression
 évaluée, qui est ici une expression XPath et non plus une EL.
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                           Créer une variable
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Nous passerons très rapidement sur cette balise. Sa syntaxe est <x:set>, et comme vous vous en doutez elle est
+l'équivalent de la balise <c:set> de la bibliothèque Core, avec de petites différences :
+
+    * l'attribut select remplace l'attribut value, ce qui a la même conséquence que pour la balise d'affichage :
+      une expression XPath est attendue, et non pas une EL ;
+
+    * l'attribut var est obligatoire, ce qui n'était pas le cas pour la balise <c:set>.
+
+Ci-dessous un bref exemple de son utilisation
+--%>
+
+<%-- Enregistre le résultat de l'expression XPath, spécifiée dans l'attribut select,  dans une variable de session nommée
+'auteur' --%>
+<x:set var="auteur" scope="session" select="$doc//auteur"></x:set>
+
+<%-- Affiche le contenu de la variable nommée 'auteur' enregistrée en session --%>
+<x:out select="$sessionScope:auteur"></x:out>
+
+<%--
+Le rôle de cette balise est donc sensiblement le même que son homologue de la bibliothèque Core : enregistrer le
+résultat d'une expression dans une variable de scope. La seule différence réside dans la nature de l'expression évaluée,
+qui est ici une expression XPath et non plus une EL.
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                           Les conditions
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Les conditions
+**************
+
+Les balises permettant la mise en place de conditions sont, là aussi, sensiblement identiques à leurs homologues de
+la bibliothèque Core : la seule et unique différence réside dans le changement de l'attribut test pour l'attribut select.
+Par conséquent, comme vous le savez maintenant, c'est ici une expression XPath qui est attendue, et non plus une EL !
+
+Plutôt que de paraphraser le précédent chapitre, je ne vous donne ici que de simples exemples commentés, qui vous
+permettront de repérer les quelques différences de syntaxe.
+
+Une condition simple
+*******************                                                                                                 --%>
+
+<%-- Afficher le titre de la news postée par 'Paul' --%>
+<x:if select="$doc/news/article[auteur='Paul']">
+    Paul a déjà posté une news dont voici le titre :
+    <x:out select="$doc/news/article[auteur='Paul']/titre"></x:out>
+</x:if>
+
+<%--
+Le rendu HTML correspondant :
+
+   Paul a déjà posté une news dont voici le titre : Bientôt un LdZ J2EE !
+
+De même que pour la balise <c:if>, il est possible de stocker le résultat du test conditionnel en spécifiant
+un attribut var.
+
+Des conditions multiples
+************************
+--%>
+<%-- Affiche le titre de la news postée par 'Nicolas' si elle existe, et un simple message sinon --%>
+
+<x:choose>
+    <x:when select="$doc/news/article[auteur='Nicolas']">
+        Nicolas a déjà posté une news dont voici le titre :
+        <x:out select="$doc/news/article[auteur='Nicolas']/titre"></x:out>
+    </x:when>
+    <x:otherwise>
+        Nicolas n'a pas posté de news.
+    </x:otherwise>
+</x:choose>
+
+<%--   Le rendu HTML correspondant :        Nicolas n'a pas posté de news.
+
+ Les contraintes d'utilisation de ces balises sont les mêmes que celles de la bibliothèque Core. Je vous renvoie
+ au chapitre précédent si vous ne vous en souvenez plus.
+
+ Voilà tout pour les tests conditionnels de la bibliothèque xml : leur utilisation est semblable à celle des conditions
+ de la bibliothèque Core, seule la cible change : on traite ici un flux XML, via des expressions XPath.
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                             Les boucles
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Les boucles
+***********
+Il n'existe qu'un seul type de boucles dans la bibliothèque xml de la JSTL, la balise <x:forEach> :
+ --%>
+
+<!-- Affiche les auteurs et titres de tous les articles -->
+<p>
+    <x:forEach var="element" select="$doc/news/article">
+        <strong><x:out select="$element/auteur"></x:out></strong> :
+        <x:out select="$element/titre"></x:out>.<br/>
+    </x:forEach>
+</p>
+
+<%--
+Le rendu HTML correspondant :
+--%>
+
+<p>
+    <strong>Pierre</strong> : Foo....<br/>
+    <strong>Paul</strong> : Bientôt un LdZ J2EE !.<br/>
+    <strong>Jacques</strong> : Coyote court toujours.<br/>
+</p>
+
+<%--
+De même que pour la balise <c:forEach>, il est possible de faire intervenir un pas de parcours via l'attribut step,
+de définir les index de début et de fin via les attributs begin et end, ou encore d'utiliser l'attribut varStatus pour
+accéder à l'état de chaque itération.
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                              Les transformations
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Transformations
+***************
+
+La bibliothèque xml de la JSTL permet d'appliquer des transformations à un flux XML via une feuille de style XSL.
+Je ne reviendrai pas ici sur le langage et les méthodes à employer, si vous n'êtes pas familiers avec ce concept,
+je vous conseille de lire cette introduction à la mise en forme de documents XML avec XSLT.
+
+La balise dédiée à cette tâche est <x:transform>. Commençons par un petit exemple, afin de comprendre comment elle
+fonctionne. J'utiliserai ici le même fichier XML que pour les exemples précédents, ainsi que la feuille de style XSL
+suivante :
+
+************************************************************************************************************************
+
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+                          <xsl:template match="/">
+                            <html xmlns="http://www.w3.org/1999/xhtml">
+                              <head>
+                                <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                                <title>Mise en forme avec XSLT</title>
+                              </head>
+                              <body>
+                                <table width="1000" border="1" cellspacing="0" cellpadding="0">
+                                  <tr>
+                                    <th scope="col">Id</th>
+                                    <th scope="col">Auteur</th>
+                                    <th scope="col">Titre</th>
+                                    <th scope="col">Contenu</th>
+                                  </tr>
+                                  <xsl:for-each select="/news/article">
+                                    <tr>
+                                      <td>
+                                        <xsl:value-of select="@id" ></xsl:value>
+                                      </td>
+                                      <td>
+                                        <xsl:value-of select="auteur" ></xsl:value>
+                                      </td>
+                                      <td>
+                                        <xsl:value-of select="titre" ></xsl:value>
+                                      </td>
+                                      <td>
+                                        <xsl:value-of select="contenu" ></xsl:value>
+                                      </td>
+                                    </tr>
+                                  </xsl:for-each>
+                                </table>
+                              </body>
+                            </html>
+                          </xsl:template>
+                        </xsl:stylesheet>
+
+************************************************************************************************************************
+
+Cette feuille affiche simplement les différents éléments de notre fichier XML dans un tableau HTML.
+Et voici comment appliquer la transformation basée sur cette feuille de style à notre document XML :
+
+                           <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+                           <%@ taglib uri="http://java.sun.com/jsp/jstl/xml" prefix="x" %>
+
+                           <c:import varReader="xslFile" url="test.xsl">
+                           <c:import varReader="xmlFile" url="monDocument.xml">
+                           	<x:transform doc="${xmlFile}" xslt="${xslFile}"></x:transform>
+                           </c:import>
+                           </c:import>
+
+On importe ici simplement nos deux fichiers, puis on appelle la balise <x:transform>. Deux attributs sont utilisés.
+
+    * doc : contient la référence au document XML sur lequel la transformation doit être appliquée. Attention, ici on
+            parle bien du document XML d'origine, et pas d'un document analysé via <x:parse>. On travaille bien
+            directement sur le contenu XML. Il est d'ailleurs possible ici de ne pas utiliser d'import, en définissant
+            directement le flux XML à traiter dans une variable de scope, voire directement dans le corps de la balise
+            comme dans l'exemple suivant :
+
+                                         <x:transform xslt="${xslFile}">
+                                            <news>
+                                              <article id="1">
+                                         	<auteur>Pierre</auteur>
+                                         	<titre>Foo...</titre>
+                                         	<contenu>...bar !</contenu>
+                                              </article>
+                                              <article id="27">
+                                         	<auteur>Paul</auteur>
+                                         	<titre>Bientôt un LdZ J2EE !</titre>
+                                         	<contenu>Woot ?</contenu>
+                                              </article>
+                                              <article id="102">
+                                         	<auteur>Jacques</auteur>
+                                         	<titre>Coyote court toujours</titre>
+                                         	<contenu>Bip bip !</contenu>
+                                              </article>
+                                            </news>
+                                         </x:transform>
+
+   xslt : contient logiquement la feuille de style XSL. Il est également possible de ne pas utiliser d'import, et
+          de simplement définir une feuille de style dans une variable de scope.
+
+  En l'absence d'attribut var, le contenu transformé sera automatiquement généré dans la page HTML finale. Et lorsque
+  vous accédez à cette page JSP depuis votre navigateur, vous apercevez un tableau contenant les données de votre
+  fichier XML : la transformation a bien été appliquée ! Ceci est particulièrement intéressant lorsque vous souhaitez
+  formater un contenu XML en HTML, par exemple lors de la lecture de flux RSS. Observez plutôt les figures suivantes.
+
+
+  Arborescence avec XSLT:
+
+                                          monDocument.xml
+                                          test.xsl
+                                          testTransformXsl.jsp
+
+
+Si par contre vous précisez un attribut var, le résultat de cette transformation sera alors stocké dans la variable
+de scope ainsi créée, de type Document. Sachez qu'il existe également un attribut result qui, en l'absence des attributs
+var et scope, stocke l'objet créé par la transformation.
+
+Pour terminer, il est possible de passer des paramètres à une transformation XSLT, en utilisant la balise <x:param>.
+Cette dernière ne peut exister que dans le corps d'une balise <x:transform>, et s'emploie de la même manière que son
+homologue de la bibliothèque Core :
+
+                                   <c:import var="xslFile" url="test.xsl"></code>
+                                   <c:import var="xmlFile" url="monDocument.xml"></c:import>
+                                   <x:transform doc="${xmlFile}" xslt="${xslFile}">
+                                      <x:param name="couleur" value="orange" ></x:param>
+                                   </x:transform>
+
+Le comportement et l'utilisation sont identiques à ceux de <c:param> : deux attributs name et value contiennent
+simplement le nom et la valeur du paramètre à transmettre. Ici dans cet exemple, ma feuille de style ne traite pas
+de paramètre, et donc ne fait rien de ce paramètre nommé couleur que je lui passe. Si vous souhaitez en savoir plus
+sur l'utilisation de paramètres dans une feuille XSL, vous savez où chercher ! ;)
+
+Il reste deux attributs que je n'ai pas explicités : docSystemId and xsltSystemId. Ils ont tous deux la même utilité
+que l'attribut systemId de la balise <x:parse>, et s'utilisent de la même façon : il suffit d'y renseigner l'URI
+destinée à résoudre les liens relatifs contenus respectivement dans le document XML et dans la feuille de style XSL.
+
+Je n'ai pour le moment pas prévu de vous présenter les autres bibliothèques de la JSTL : je pense que vous êtes
+maintenant assez familiers avec la compréhension du fonctionnement des tags JSTL pour voler de vos propres ailes.
+
+Mais ne partez pas si vite ! Prenez le temps de faire tous les tests que vous jugez nécessaires. Il n'y a que
+comme ça que ça rentrera, et que vous prendrez suffisamment de recul pour comprendre parfaitement ce que vous faites.
+Dans le chapitre suivant je vous propose un exercice d'application de ce que vous venez de découvrir, et ensuite on
+reprendra le code d'exemple de la partie précédente en y intégrant la JSTL !
+
+    * La bibliothèque XML de la JSTL s'appuie sur la technologie XPath.
+
+    * On analyse une source XML avec <x:parse>.
+
+    * On affiche le contenu d'une variable ou d'un noeud avec <x:out>.
+
+    * On réalise un test avec <x:if> ou <x:choose>.
+
+    * On réalise une boucle avec <x:forEach>.
+
+    * On applique une transformation XSLT avec <x:transform>.
 
 --%>
+
+
+
 
 </body>
 </html>
